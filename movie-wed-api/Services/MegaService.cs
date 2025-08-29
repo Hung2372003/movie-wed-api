@@ -55,6 +55,36 @@ namespace movie_wed_api.Services
             return stream;
         }
 
+        public async Task<(Stream Stream, string FileName)> DownloadFileWithNameAsync(string megaLink)
+        {
+            await _client.LoginAsync(_email, _password);
 
+            var uri = new Uri(megaLink);
+            var node = await _client.GetNodeFromLinkAsync(uri);
+
+            var stream = await _client.DownloadAsync(node);
+            var fileName = node.Name;
+
+            await _client.LogoutAsync();
+
+            return (stream, fileName);
+        }
+
+        public async Task LoginAsync()
+        {
+            if (_client.IsLoggedIn) return;
+            await _client.LoginAsync(_email, _password);
+        }
+
+        public async Task<(Uri DirectLink, string FileName)> GetDirectLinkAsync(string megaLink)
+        {
+            var uri = new Uri(megaLink);
+            var node = await _client.GetNodeFromLinkAsync(uri);
+
+            var directLink = await _client.GetDownloadLinkAsync(node);
+            var fileName = node.Name;
+
+            return (directLink, fileName);
+        }
     }
 }

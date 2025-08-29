@@ -9,43 +9,37 @@ namespace movie_wed_api.Controllers
         public class VideoController : ControllerBase
         {
         private readonly MegaService _megaService;
+        private readonly CloudinaryService _cloudinaryService;
 
-        public VideoController(MegaService megaService)
+        public VideoController(MegaService megaService, CloudinaryService cloudinaryService)
         {
             _megaService = megaService;
+            _cloudinaryService = cloudinaryService;
         }
 
-        [HttpPost("upload")]
-        public async Task<IActionResult> UploadVideo(IFormFile file, [FromQuery] string folderName = "Videos")
+
+        [HttpPost("upload-video")]
+        public async Task<IActionResult> UploadVideo(IFormFile file)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return BadRequest("No file uploaded");
 
-            var filePath = Path.Combine(Path.GetTempPath(), file.FileName);
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            var link = await _megaService.UploadFileAsync(filePath, folderName);
-            System.IO.File.Delete(filePath);
-
-            return Ok(new { FileName = file.FileName, MegaLink = link });
+            var url = await _cloudinaryService.UploadVideoAsync(file);
+            return Ok(new { Url = url });
         }
 
-
-        [HttpGet("stream")]
-        public async Task<IActionResult> StreamVideo([FromQuery] string megaLink)
+        [HttpPost("upload-image")]
+        public async Task<IActionResult> UploadImage(IFormFile file)
         {
-            if (string.IsNullOrEmpty(megaLink))
-                return BadRequest("Missing megaLink");
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
 
-            var stream = await _megaService.DownloadFileAsync(megaLink);
-
-            // enableRangeProcessing = true -> ASP.NET sẽ trả 206 Partial Content khi cần
-            return File(stream, "video/mp4", enableRangeProcessing: true);
+            var url = await _cloudinaryService.UploadImageAsync(file);
+            return Ok(new { Url = url });
         }
-        // Stream với Range
-      
+
+
+
+
     }
 }

@@ -10,7 +10,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddDbContext<MovieDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnectionSSl"),
