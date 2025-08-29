@@ -8,34 +8,44 @@ namespace movie_wed_api.Controllers
         [Route("api/[controller]")]
         public class VideoController : ControllerBase
         {
-            private readonly MegaService _megaService;
+        private readonly MegaService _megaService;
 
-            public VideoController(MegaService megaService)
+        public VideoController(MegaService megaService)
+        {
+            _megaService = megaService;
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadVideo(IFormFile file, [FromQuery] string folderName = "Videos")
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var filePath = Path.Combine(Path.GetTempPath(), file.FileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                _megaService = megaService;
+                await file.CopyToAsync(stream);
             }
 
-            [HttpPost("upload")]
-            public async Task<IActionResult> UploadVideo(IFormFile file)
-            {
-                if (file == null || file.Length == 0)
-                    return BadRequest("No file uploaded.");
+            var link = await _megaService.UploadFileAsync(filePath, folderName);
+            System.IO.File.Delete(filePath);
 
-                // Lưu file tạm vào server
-                var filePath = Path.Combine(Path.GetTempPath(), file.FileName);
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
+            return Ok(new { FileName = file.FileName, MegaLink = link });
+        }
 
-                // Upload lên Mega
-                var link = await _megaService.UploadFileAsync(filePath);
 
-                // Xóa file tạm
-                System.IO.File.Delete(filePath);
+        [HttpGet("stream")]
+        public async Task<IActionResult> StreamVideo([FromQuery] string megaLink)
+        {
+            if (string.IsNullOrEmpty(megaLink))
+                return BadRequest("Missing megaLink");
 
-                return Ok(new { FileName = file.FileName, MegaLink = link });
-            }
-        
+            var stream = await _megaService.DownloadFileAsync(megaLink);
+
+            // enableRangeProcessing = true -> ASP.NET sẽ trả 206 Partial Content khi cần
+            return File(stream, "video/mp4", enableRangeProcessing: true);
+        }
+        // Stream với Range
+      
     }
 }

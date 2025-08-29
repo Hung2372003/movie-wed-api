@@ -16,22 +16,45 @@ namespace movie_wed_api.Services
             _client = new MegaApiClient();
         }
 
-        public async Task<string> UploadFileAsync(string filePath)
+        public async Task<string> UploadFileAsync(string filePath, string folderName)
         {
             await _client.LoginAsync(_email, _password);
 
-            // Lấy node Root (thư mục gốc Mega)
-            var root = _client.GetNodes().First(n => n.Type == NodeType.Root);
+            var nodes = _client.GetNodes();
+            var folder = nodes.FirstOrDefault(n => n.Type == NodeType.Directory && n.Name == folderName);
 
-            // Upload
+            // Nếu folder chưa có thì tạo
+            if (folder == null)
+            {
+                var root = nodes.First(n => n.Type == NodeType.Root);
+                folder = await _client.CreateFolderAsync(folderName, root);
+            }
+
             using var stream = File.OpenRead(filePath);
-            var node = await _client.UploadAsync(stream, Path.GetFileName(filePath), root);
+            var node = await _client.UploadAsync(stream, Path.GetFileName(filePath), folder);
 
-            // Tạo link public
             var link = await _client.GetDownloadLinkAsync(node);
-
             await _client.LogoutAsync();
+
             return link.ToString();
         }
+
+
+        // Tải file về dạng stream từ link Mega
+        public async Task<Stream> DownloadFileAsync(string megaLink)
+        {
+            await _client.LoginAsync(_email, _password);
+
+            var uri = new Uri(megaLink);
+            var node = await _client.GetNodeFromLinkAsync(uri);
+
+            // Lấy stream trực tiếp
+            var stream = await _client.DownloadAsync(node);
+
+            await _client.LogoutAsync();
+            return stream;
+        }
+
+
     }
 }
