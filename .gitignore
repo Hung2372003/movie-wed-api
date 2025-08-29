@@ -22,7 +22,7 @@ artifacts/
 *.mdf
 
 ### Entity Framework ###
-Migrations/
+
 
 ### Visual Studio Code ###
 .vscode/
