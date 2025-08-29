@@ -16,6 +16,7 @@ namespace movie_wed_api.Models
         public string Content { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation
         public Movie Movie { get; set; }

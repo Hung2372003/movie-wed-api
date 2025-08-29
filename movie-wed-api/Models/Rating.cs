@@ -14,9 +14,9 @@ namespace movie_wed_api.Models
 
         [Range(1, 5)]
         public int RatingValue { get; set; }
-
+        public int Score { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+        public DateTime UpdatedAt { get; set; }
         // Navigation
         public Movie Movie { get; set; }
         public User User { get; set; }
