@@ -1,4 +1,4 @@
-﻿namespace movie_wed_api.DTOs.Comments
+﻿namespace movie_wed_api.DTOs
 {
     public class CommentCreateDto
     {

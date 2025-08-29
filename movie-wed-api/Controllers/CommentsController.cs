@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using movie_wed_api.Database;
-using movie_wed_api.DTOs.Comments;
+using movie_wed_api.DTOs;
 using movie_wed_api.Models;
 using System.Security.Claims;
 
