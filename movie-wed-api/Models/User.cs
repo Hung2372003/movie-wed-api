@@ -7,26 +7,20 @@ namespace movie_wed_api.Models
     {
         public int Id { get; set; }
 
-        [Required, StringLength(50)]
-        public string Username { get; set; }
-
-        [Required, StringLength(100)]
-        public string Email { get; set; }
-
-        [Required]
-        public string PasswordHash { get; set; }
-
-        [Required]
-        public string Role { get; set; } = "User"; // "User" | "Admin"
-
+        public string Username { get; set; } = null!; // 🔹 username đăng nhập
+        public string Email { get; set; } = null!;
+        public string PasswordHash { get; set; } = null!;
+        public string Role { get; set; } = "User";
+        public string? FullName { get; set; }
         public string? AvatarUrl { get; set; }
+        public string? AvatarPublicId { get; set; }
+        
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+        public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+        public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-
-        // Navigation
-        public ICollection<Comment> Comments { get; set; }
-        public ICollection<Rating> Ratings { get; set; }
-        public ICollection<Favorite> Favorites { get; set; }
     }
 }

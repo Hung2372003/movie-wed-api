@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using movie_wed_api.Database;
 using movie_wed_api.DTOs.Movies;
 using movie_wed_api.Models;
+using movie_wed_api.Services;
 
 namespace movie_wed_api.Controllers
 {
@@ -12,13 +13,15 @@ namespace movie_wed_api.Controllers
     public class MoviesController : ControllerBase
     {
         private readonly MovieDbContext _context;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public MoviesController(MovieDbContext context)
+        public MoviesController(MovieDbContext context, ICloudinaryService cloudinaryService)
         {
             _context = context;
+            _cloudinaryService = cloudinaryService;
         }
 
-        // GET /api/movies?search=Avengers&type=Action&country=USA&year=2019&page=1&pageSize=10
+        // GET /api/movies?search=...&page=1&pageSize=10
         [HttpGet]
         public async Task<IActionResult> GetMovies(
             string? search, string? type, string? country, int? year,
@@ -65,15 +68,13 @@ namespace movie_wed_api.Controllers
 
         // POST /api/movies (Admin)
         [HttpPost]
-        [Authorize] // 🔒 bạn có thể thay bằng [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateMovie(MovieCreateDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateMovie([FromForm] MovieCreateDto dto)
         {
             var movie = new Movie
             {
                 Title = dto.Title,
                 Description = dto.Description,
-                PosterUrl = dto.PosterUrl,
-                TrailerUrl = dto.TrailerUrl,
                 ReleaseYear = dto.ReleaseYear,
                 Country = dto.Country,
                 Director = dto.Director,
@@ -81,6 +82,20 @@ namespace movie_wed_api.Controllers
                 Type = dto.Type,
                 CreatedAt = DateTime.UtcNow
             };
+
+            if (dto.Poster != null)
+            {
+                var poster = await _cloudinaryService.UploadImageAsync(dto.Poster);
+                movie.PosterUrl = poster.Url;
+                movie.PosterPublicId = poster.PublicId;
+            }
+
+            if (dto.Trailer != null)
+            {
+                var trailer = await _cloudinaryService.UploadVideoAsync(dto.Trailer);
+                movie.TrailerUrl = trailer.Url;
+                movie.TrailerPublicId = trailer.PublicId;
+            }
 
             _context.Movies.Add(movie);
             await _context.SaveChangesAsync();
@@ -90,16 +105,14 @@ namespace movie_wed_api.Controllers
 
         // PUT /api/movies/5 (Admin)
         [HttpPut("{id}")]
-        [Authorize]
-        public async Task<IActionResult> UpdateMovie(int id, MovieUpdateDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateMovie(int id, [FromForm] MovieUpdateDto dto)
         {
             var movie = await _context.Movies.FindAsync(id);
             if (movie == null) return NotFound();
 
             movie.Title = dto.Title;
             movie.Description = dto.Description;
-            movie.PosterUrl = dto.PosterUrl;
-            movie.TrailerUrl = dto.TrailerUrl;
             movie.ReleaseYear = dto.ReleaseYear;
             movie.Country = dto.Country;
             movie.Director = dto.Director;
@@ -107,18 +120,43 @@ namespace movie_wed_api.Controllers
             movie.Type = dto.Type;
             movie.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            if (dto.Poster != null)
+            {
+                if (!string.IsNullOrEmpty(movie.PosterPublicId))
+                    await _cloudinaryService.DeleteFileAsync(movie.PosterPublicId);
 
+                var poster = await _cloudinaryService.UploadImageAsync(dto.Poster);
+                movie.PosterUrl = poster.Url;
+                movie.PosterPublicId = poster.PublicId;
+            }
+
+            if (dto.Trailer != null)
+            {
+                if (!string.IsNullOrEmpty(movie.TrailerPublicId))
+                    await _cloudinaryService.DeleteFileAsync(movie.TrailerPublicId);
+
+                var trailer = await _cloudinaryService.UploadVideoAsync(dto.Trailer);
+                movie.TrailerUrl = trailer.Url;
+                movie.TrailerPublicId = trailer.PublicId;
+            }
+
+            await _context.SaveChangesAsync();
             return Ok(movie);
         }
 
         // DELETE /api/movies/5 (Admin)
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteMovie(int id)
         {
             var movie = await _context.Movies.FindAsync(id);
             if (movie == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(movie.PosterPublicId))
+                await _cloudinaryService.DeleteFileAsync(movie.PosterPublicId);
+
+            if (!string.IsNullOrEmpty(movie.TrailerPublicId))
+                await _cloudinaryService.DeleteFileAsync(movie.TrailerPublicId);
 
             _context.Movies.Remove(movie);
             await _context.SaveChangesAsync();

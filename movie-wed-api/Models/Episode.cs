@@ -17,6 +17,7 @@ namespace movie_wed_api.Models
 
         [Required]
         public string VideoUrl { get; set; }
+        public string? VideoPublicId { get; set; }
 
         public int? Duration { get; set; }
 

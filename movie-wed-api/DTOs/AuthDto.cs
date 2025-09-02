@@ -9,7 +9,7 @@
 
     public class LoginDto
     {
-        public string Email { get; set; } = null!;
-        public string Password { get; set; } = null!;
+        public string Identifier { get; set; } = string.Empty; // username hoặc email
+        public string Password { get; set; } = string.Empty;
     }
 }

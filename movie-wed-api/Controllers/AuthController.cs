@@ -46,24 +46,34 @@ namespace movie_wed_api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            // Tìm user theo email hoặc username
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == dto.Identifier || u.Username == dto.Identifier);
+
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return Unauthorized(new { message = "Invalid email or password" });
+                return Unauthorized(new { message = "Invalid username/email or password" });
 
             var token = GenerateJwtToken(user);
-            return Ok(new { token });
+            return Ok(new
+            {
+                token,
+                user = new { user.Id, user.Username, user.Email }
+            });
         }
 
         private string GenerateJwtToken(User user)
         {
             var jwtKey = _config["Jwt:Key"];
             var jwtIssuer = _config["Jwt:Issuer"];
+            var jwtAudience = _config["Jwt:Audience"];
 
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email)
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!));
@@ -71,13 +81,14 @@ namespace movie_wed_api.Controllers
 
             var token = new JwtSecurityToken(
                 issuer: jwtIssuer,
-                audience: null,
+                audience: jwtAudience,   // 👈 gán audience từ config
                 claims: claims,
                 expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+
         }
     }
 }

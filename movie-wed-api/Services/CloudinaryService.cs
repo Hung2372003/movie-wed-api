@@ -17,7 +17,7 @@ namespace movie_wed_api.Services
             _cloudinary = new Cloudinary(account);
         }
 
-        public async Task<string> UploadVideoAsync(IFormFile file)
+        public async Task<(string Url, string PublicId)> UploadVideoAsync(IFormFile file)
         {
             await using var stream = file.OpenReadStream();
             var uploadParams = new VideoUploadParams()
@@ -27,10 +27,10 @@ namespace movie_wed_api.Services
             };
 
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-            return uploadResult.SecureUrl.ToString();
+            return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
         }
 
-        public async Task<string> UploadImageAsync(IFormFile file)
+        public async Task<(string Url, string PublicId)> UploadImageAsync(IFormFile file)
         {
             await using var stream = file.OpenReadStream();
             var uploadParams = new ImageUploadParams()
@@ -40,7 +40,15 @@ namespace movie_wed_api.Services
             };
 
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-            return uploadResult.SecureUrl.ToString();
+            return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
+        }
+
+        public async Task DeleteFileAsync(string publicId)
+        {
+            if (string.IsNullOrEmpty(publicId)) return;
+
+            var deletionParams = new DeletionParams(publicId);
+            await _cloudinary.DestroyAsync(deletionParams);
         }
     }
 }

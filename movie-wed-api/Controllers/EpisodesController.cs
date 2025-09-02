@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using movie_wed_api.Database;
 using movie_wed_api.DTOs.Episodes;
 using movie_wed_api.Models;
+using movie_wed_api.Services;
 
 namespace movie_wed_api.Controllers
 {
@@ -12,10 +13,12 @@ namespace movie_wed_api.Controllers
     public class EpisodesController : ControllerBase
     {
         private readonly MovieDbContext _context;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public EpisodesController(MovieDbContext context)
+        public EpisodesController(MovieDbContext context, ICloudinaryService cloudinaryService)
         {
             _context = context;
+            _cloudinaryService = cloudinaryService;
         }
 
         // GET /api/episodes/movie/5
@@ -44,8 +47,8 @@ namespace movie_wed_api.Controllers
 
         // POST /api/episodes/movie/5
         [HttpPost("movie/{movieId}")]
-        [Authorize] // 🔒 bạn có thể thay bằng [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateEpisode(int movieId, EpisodeCreateDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateEpisode(int movieId, [FromForm] EpisodeCreateDto dto)
         {
             var movie = await _context.Movies.FindAsync(movieId);
             if (movie == null) return NotFound(new { message = "Movie not found" });
@@ -55,9 +58,15 @@ namespace movie_wed_api.Controllers
                 MovieId = movieId,
                 EpisodeNumber = dto.EpisodeNumber,
                 Title = dto.Title,
-                VideoUrl = dto.VideoUrl,
                 CreatedAt = DateTime.UtcNow
             };
+
+            if (dto.Video != null)
+            {
+                var uploadResult = await _cloudinaryService.UploadVideoAsync(dto.Video);
+                episode.VideoUrl = uploadResult.Url;
+                episode.VideoPublicId = uploadResult.PublicId;
+            }
 
             _context.Episodes.Add(episode);
             await _context.SaveChangesAsync();
@@ -67,16 +76,26 @@ namespace movie_wed_api.Controllers
 
         // PUT /api/episodes/10
         [HttpPut("{id}")]
-        [Authorize]
-        public async Task<IActionResult> UpdateEpisode(int id, EpisodeUpdateDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateEpisode(int id, [FromForm] EpisodeUpdateDto dto)
         {
             var episode = await _context.Episodes.FindAsync(id);
             if (episode == null) return NotFound();
 
             episode.EpisodeNumber = dto.EpisodeNumber;
             episode.Title = dto.Title;
-            episode.VideoUrl = dto.VideoUrl;
             episode.UpdatedAt = DateTime.UtcNow;
+
+            if (dto.Video != null)
+            {
+                // xóa video cũ
+                if (!string.IsNullOrEmpty(episode.VideoPublicId))
+                    await _cloudinaryService.DeleteFileAsync(episode.VideoPublicId);
+
+                var uploadResult = await _cloudinaryService.UploadVideoAsync(dto.Video);
+                episode.VideoUrl = uploadResult.Url;
+                episode.VideoPublicId = uploadResult.PublicId;
+            }
 
             await _context.SaveChangesAsync();
             return Ok(episode);
@@ -84,11 +103,14 @@ namespace movie_wed_api.Controllers
 
         // DELETE /api/episodes/10
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteEpisode(int id)
         {
             var episode = await _context.Episodes.FindAsync(id);
             if (episode == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(episode.VideoPublicId))
+                await _cloudinaryService.DeleteFileAsync(episode.VideoPublicId);
 
             _context.Episodes.Remove(episode);
             await _context.SaveChangesAsync();

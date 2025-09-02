@@ -11,7 +11,12 @@
         public string? Director { get; set; }
         public int? Duration { get; set; }
         public string Type { get; set; } = null!;
+
+        public IFormFile? Poster { get; set; }
+        public IFormFile? Trailer { get; set; }
     }
 
-    public class MovieUpdateDto : MovieCreateDto { }
+    public class MovieUpdateDto : MovieCreateDto {
+    
+    }
 }

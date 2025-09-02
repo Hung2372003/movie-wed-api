@@ -120,6 +120,40 @@ namespace movie_wed_api.Database
                     index.SetDatabaseName(index.GetDatabaseName()?.ToSnakeCase(true));
             }
         }
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.State == EntityState.Modified)
+                {
+                    var updatedAtProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "UpdatedAt");
+                    if (updatedAtProp != null)
+                    {
+                        updatedAtProp.CurrentValue = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        public override int SaveChanges()
+        {
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.State == EntityState.Modified)
+                {
+                    var updatedAtProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "UpdatedAt");
+                    if (updatedAtProp != null)
+                    {
+                        updatedAtProp.CurrentValue = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            return base.SaveChanges();
+        }
+
 
 
     }
