@@ -8,12 +8,10 @@ namespace movie_wed_api.Controllers
         [Route("api/[controller]")]
         public class VideoController : ControllerBase
         {
-        private readonly MegaService _megaService;
         private readonly CloudinaryService _cloudinaryService;
 
-        public VideoController(MegaService megaService, CloudinaryService cloudinaryService)
+        public VideoController( CloudinaryService cloudinaryService)
         {
-            _megaService = megaService;
             _cloudinaryService = cloudinaryService;
         }
 
