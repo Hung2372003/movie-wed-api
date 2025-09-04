@@ -98,11 +98,11 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 // 7. Middleware
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
