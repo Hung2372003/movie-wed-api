@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 
 namespace movie_wed_api.Models
@@ -22,6 +23,7 @@ namespace movie_wed_api.Models
 
         public ICollection<Episode> Episodes { get; set; } = new List<Episode>();
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+        [JsonIgnore]
         public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
         public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
     }

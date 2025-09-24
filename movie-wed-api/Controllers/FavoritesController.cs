@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using movie_wed_api.Database;
 using movie_wed_api.Models;
+using System.Security.Claims;
 
 namespace movie_wed_api.Controllers
 {
@@ -22,7 +23,7 @@ namespace movie_wed_api.Controllers
         [Authorize]
         public async Task<IActionResult> GetMyFavorites()
         {
-            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var favorites = await _context.Favorites
                 .Include(f => f.Movie)
                 .Where(f => f.UserId == userId)
@@ -36,7 +37,7 @@ namespace movie_wed_api.Controllers
         [Authorize]
         public async Task<IActionResult> AddFavorite(int movieId)
         {
-            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var movie = await _context.Movies.FindAsync(movieId);
             if (movie == null) return NotFound(new { message = "Movie not found" });
@@ -65,7 +66,7 @@ namespace movie_wed_api.Controllers
         [Authorize]
         public async Task<IActionResult> RemoveFavorite(int movieId)
         {
-            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var favorite = await _context.Favorites
                 .FirstOrDefaultAsync(f => f.MovieId == movieId && f.UserId == userId);

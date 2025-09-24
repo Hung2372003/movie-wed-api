@@ -28,7 +28,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
         policy => policy
-            .WithOrigins("http://localhost:3000") // địa chỉ frontend React
+            .WithOrigins("http://localhost:5173") // địa chỉ frontend React
             .AllowAnyHeader()
             .AllowAnyMethod()
     );
@@ -49,7 +49,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidateAudience = false,
+        ValidateAudience = true,
         //ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
