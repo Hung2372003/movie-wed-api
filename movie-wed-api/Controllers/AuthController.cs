@@ -57,7 +57,7 @@ namespace movie_wed_api.Controllers
             return Ok(new
             {
                 token,
-                user = new { user.Id, user.Username, user.Email }
+                user = new { user.Id, user.Username, user.Email,user.Role }
             });
         }
 
