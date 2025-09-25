@@ -32,15 +32,18 @@ namespace movie_wed_api.Controllers
             var user = new User
             {
                 Username = dto.Username,
+                FullName = dto.Username,
                 Email = dto.Email,
+                AvatarUrl = "https://res.cloudinary.com/dgfxw2ed6/image/upload/v1758786995/Screenshot_2025-09-11_142941_t3bfco.png",
+                Role = "User",  
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 CreatedAt = DateTime.UtcNow
-            };
+            }; 
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { user.Id, user.Username, user.Email });
+            return Ok(new { user.Id, user.Username, user.Email,user.State,user.Country ,user.AvatarUrl,user.FullName});
         }
 
         [HttpPost("login")]
@@ -57,7 +60,7 @@ namespace movie_wed_api.Controllers
             return Ok(new
             {
                 token,
-                user = new { user.Id, user.Username, user.Email ,user.Role}
+                user = new { user.Id, user.Username, user.Email ,user.Role,user.State,user.Country,user.AvatarUrl,user.FullName}
 
             });
         }

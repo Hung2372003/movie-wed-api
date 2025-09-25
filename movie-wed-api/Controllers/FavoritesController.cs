@@ -24,13 +24,31 @@ namespace movie_wed_api.Controllers
         public async Task<IActionResult> GetMyFavorites()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
             var favorites = await _context.Favorites
-                .Include(f => f.Movie)
                 .Where(f => f.UserId == userId)
+                .Include(f => f.Movie)
+                .Select(f => new
+                {
+                    f.Id,
+                    f.UserId,
+                    f.MovieId,
+                    f.CreatedAt,
+                    Movie = new
+                    {
+                        f.Movie.Id,
+                        f.Movie.Title,
+                        f.Movie.PosterUrl,
+                        f.Movie.ReleaseYear,
+                        f.Movie.Description,
+                        f.Movie.Ratings
+                    }
+                })
                 .ToListAsync();
 
             return Ok(favorites);
         }
+
 
         // POST /api/favorites/movie/5
         [HttpPost("movie/{movieId}")]

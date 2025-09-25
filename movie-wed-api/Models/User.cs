@@ -14,6 +14,8 @@ namespace movie_wed_api.Models
         public string? FullName { get; set; }
         public string? AvatarUrl { get; set; }
         public string? AvatarPublicId { get; set; }
+        public string? Country { get; set; }
+        public string? State { get; set; }
         
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();

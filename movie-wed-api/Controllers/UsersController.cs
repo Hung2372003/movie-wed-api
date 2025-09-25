@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using movie_wed_api.Database;
 using movie_wed_api.DTOs;
 using movie_wed_api.Services;
-using System.Text;
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace movie_wed_api.Controllers
 {
@@ -64,7 +65,7 @@ namespace movie_wed_api.Controllers
         [Authorize]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null) return NotFound();
@@ -76,12 +77,21 @@ namespace movie_wed_api.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateProfile([FromForm] UserUpdateDto dto)
         {
-            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
 
             if (!string.IsNullOrEmpty(dto.FullName))
                 user.FullName = dto.FullName;
+
+            if (!string.IsNullOrEmpty(dto.Country))
+                user.Country = dto.Country;
+
+            if (!string.IsNullOrEmpty(dto.Email))
+                user.Email = dto.Email;
+
+            if (!string.IsNullOrEmpty(dto.State))
+                user.State = dto.State;
 
             if (!string.IsNullOrEmpty(dto.Password))
                 user.PasswordHash = HashPassword(dto.Password);
@@ -89,11 +99,7 @@ namespace movie_wed_api.Controllers
             if (dto.Avatar != null)
             {
                 // Xóa avatar cũ (nếu có)
-                if (!string.IsNullOrEmpty(user.AvatarPublicId))
-                {
-                    await _cloudinaryService.DeleteFileAsync(user.AvatarPublicId);
-                }
-
+             
                 var (url, publicId) = await _cloudinaryService.UploadImageAsync(dto.Avatar);
                 user.AvatarUrl = url;
                 user.AvatarPublicId = publicId;

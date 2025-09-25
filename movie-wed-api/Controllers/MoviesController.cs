@@ -24,32 +24,53 @@ namespace movie_wed_api.Controllers
         // GET /api/movies?search=...&page=1&pageSize=10
         [HttpGet]
         public async Task<IActionResult> GetMovies(
-            string? search, string? type, string? country, int? year,
-            int page = 1, int pageSize = 10)
-        {
-            var query = _context.Movies.AsQueryable();
+          string? search, string? type, string? country, int? year,
+          int page = 1, int pageSize = 10)
+            {
+                var query = _context.Movies.AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
-                query = query.Where(m => m.Title.Contains(search));
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(m => m.Title.Contains(search));
 
-            if (!string.IsNullOrEmpty(type))
-                query = query.Where(m => m.Type == type);
+                if (!string.IsNullOrEmpty(type))
+                    query = query.Where(m => m.Type == type);
 
-            if (!string.IsNullOrEmpty(country))
-                query = query.Where(m => m.Country == country);
+                if (!string.IsNullOrEmpty(country))
+                    query = query.Where(m => m.Country == country);
 
-            if (year.HasValue)
-                query = query.Where(m => m.ReleaseYear == year);
+                if (year.HasValue)
+                    query = query.Where(m => m.ReleaseYear == year);
 
-            var total = await query.CountAsync();
-            var movies = await query
-                .OrderByDescending(m => m.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+                var total = await query.CountAsync();
+
+                var movies = await query
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(m => new
+                    {
+                        m.Id,
+                        m.Title,
+                        m.Description,
+                        m.PosterUrl,
+                        m.ReleaseYear,
+                        m.Country,
+                        m.Director,
+                        m.Duration,
+                        m.Type,
+                        m.TrailerUrl,
+                        m.TrailerPublicId,
+                        m.CreatedAt,
+                        AverageRating = m.Ratings.Any()
+                            ? m.Ratings.Average(r => r.Score)
+                            : 10,  // nếu chưa có rating
+                        RatingsCount = m.Ratings.Count
+                    })
+                    .ToListAsync();
 
             return Ok(new { total, page, pageSize, data = movies });
         }
+
 
         // GET /api/movies/5
         [HttpGet("{id}")]

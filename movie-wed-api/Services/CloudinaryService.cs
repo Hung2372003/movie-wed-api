@@ -1,5 +1,6 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using System.Security.Cryptography;
 
 namespace movie_wed_api.Services
 {
@@ -17,30 +18,58 @@ namespace movie_wed_api.Services
             _cloudinary = new Cloudinary(account);
         }
 
+        private static string ComputeSHA1(IFormFile file)
+        {
+            using var sha1 = SHA1.Create();
+            using var stream = file.OpenReadStream();
+            var hash = sha1.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLower();
+        }
         public async Task<(string Url, string PublicId)> UploadVideoAsync(IFormFile file)
         {
-            await using var stream = file.OpenReadStream();
-            var uploadParams = new VideoUploadParams()
+            var publicId = "videos/" + ComputeSHA1(file);
+            try
             {
-                File = new FileDescription(file.FileName, stream),
-                Folder = "videos"
-            };
+                await using var stream = file.OpenReadStream();
+                var uploadParams = new VideoUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = "videos",
+                    PublicId = publicId,
+                    Overwrite = false
+                };
 
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-            return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
+            }catch(Exception)
+            {
+                var existing = await _cloudinary.GetResourceAsync(publicId);
+                return (existing.SecureUrl ?? "", existing.PublicId);
+            }
         }
 
         public async Task<(string Url, string PublicId)> UploadImageAsync(IFormFile file)
         {
-            await using var stream = file.OpenReadStream();
-            var uploadParams = new ImageUploadParams()
+            var publicId = "images/" + ComputeSHA1(file);
+            try
             {
-                File = new FileDescription(file.FileName, stream),
-                Folder = "images"
-            };
+                await using var stream = file.OpenReadStream();
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = "images",
+                    PublicId = publicId,
+                    Overwrite = false
+                };
 
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-            return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
+            }
+            catch(Exception)
+            {
+                var existing = await _cloudinary.GetResourceAsync(publicId);
+                return (existing.SecureUrl ?? "", existing.PublicId);
+            }
         }
 
         public async Task DeleteFileAsync(string publicId)

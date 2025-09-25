@@ -27,7 +27,7 @@ namespace movie_wed_api.Controllers
                 .Where(r => r.MovieId == movieId)
                 .ToListAsync();
 
-            var avg = ratings.Count > 0 ? ratings.Average(r => r.Score) : 0;
+            var avg = ratings.Count > 0 ? ratings.Average(r => r.Score) : 10;
 
             return Ok(new { average = avg, total = ratings.Count, data = ratings });
         }
