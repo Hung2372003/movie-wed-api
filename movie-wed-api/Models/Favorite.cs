@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace movie_wed_api.Models
 {
@@ -15,6 +16,7 @@ namespace movie_wed_api.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
+        [JsonIgnore]
         public Movie Movie { get; set; }
         public User User { get; set; }
     }

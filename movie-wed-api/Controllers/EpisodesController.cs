@@ -21,6 +21,17 @@ namespace movie_wed_api.Controllers
             _cloudinaryService = cloudinaryService;
         }
 
+        [HttpGet("movie/all")]
+        public async Task<IActionResult> GetEpisodesAllMovie()
+        {
+            var episodes = await _context.Episodes         
+                .OrderBy(e => e.EpisodeNumber)
+                .ToListAsync();
+
+            return Ok(episodes);
+        }
+
+
         // GET /api/episodes/movie/5
         [HttpGet("movie/{movieId}")]
         public async Task<IActionResult> GetEpisodesByMovie(int movieId)
@@ -51,12 +62,31 @@ namespace movie_wed_api.Controllers
         public async Task<IActionResult> CreateEpisode(int movieId, [FromForm] EpisodeCreateDto dto)
         {
             var movie = await _context.Movies.FindAsync(movieId);
-            if (movie == null) return NotFound(new { message = "Movie not found" });
+            if (movie == null)
+                return NotFound(new { message = "Movie not found" });
+
+            // Nếu không truyền EpisodeNumber thì tự động lấy số lớn nhất + 1
+            int episodeNumber =  dto.EpisodeNumber > 0 
+                ? dto.EpisodeNumber
+                : await _context.Episodes
+                    .Where(e => e.MovieId == movieId)
+                    .Select(e => e.EpisodeNumber)
+                    .DefaultIfEmpty(0)
+                    .MaxAsync() + 1;
+
+            // Check trùng trước khi thêm
+            bool exists = await _context.Episodes
+                .AnyAsync(e => e.MovieId == movieId && e.EpisodeNumber == episodeNumber);
+
+            if (exists)
+            {
+                return Conflict(new { message = $"Episode {episodeNumber} already exists for this movie." });
+            }
 
             var episode = new Episode
             {
                 MovieId = movieId,
-                EpisodeNumber = dto.EpisodeNumber,
+                EpisodeNumber = episodeNumber,
                 Title = dto.Title,
                 CreatedAt = DateTime.UtcNow
             };
@@ -71,8 +101,17 @@ namespace movie_wed_api.Controllers
             _context.Episodes.Add(episode);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetEpisode), new { id = episode.Id }, episode);
+            return CreatedAtAction(nameof(GetEpisode), new { id = episode.Id }, new
+            {
+                Id = episode.Id,
+                MovieId = episode.MovieId,
+                EpisodeNumber = episode.EpisodeNumber,
+                Title = episode.Title,
+                VideoUrl = episode.VideoUrl,
+                CreatedAt = episode.CreatedAt
+            });
         }
+
 
         // PUT /api/episodes/10
         [HttpPut("{id}")]

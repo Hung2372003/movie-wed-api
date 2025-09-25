@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using movie_wed_api.Database;
 using movie_wed_api.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace movie_wed_api.Controllers
 {
@@ -35,9 +37,9 @@ namespace movie_wed_api.Controllers
         [Authorize]
         public async Task<IActionResult> RateMovie(int movieId, [FromBody] int score)
         {
-            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            if (score < 1 || score > 5)
+            if (score < 1 || score > 10)
                 return BadRequest(new { message = "Score must be between 1 and 5" });
 
             var movie = await _context.Movies.FindAsync(movieId);

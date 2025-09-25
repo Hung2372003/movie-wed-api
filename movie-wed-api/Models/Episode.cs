@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace movie_wed_api.Models
 {
@@ -9,7 +10,6 @@ namespace movie_wed_api.Models
         [Required]
         public int MovieId { get; set; }
 
-        [Required]
         public int EpisodeNumber { get; set; }
 
         [StringLength(255)]
@@ -26,6 +26,7 @@ namespace movie_wed_api.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
+        [JsonIgnore]
         public Movie Movie { get; set; }
     }
 }
