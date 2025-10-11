@@ -82,6 +82,7 @@ namespace movie_wed_api.Controllers
                 .Include(m => m.Ratings)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+
             if (movie == null) return NotFound();
 
             return Ok(movie);
@@ -183,6 +184,139 @@ namespace movie_wed_api.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+
+        [HttpPost("search")]
+        public async Task<IActionResult> SearchMovies([FromBody] MovieSearchRequest request)
+        {
+            if(request.ReleaseYearFrom == 0)
+            {
+                request.ReleaseYearFrom = 2000;
+            }
+            if (request.ReleaseYearTo == 0)
+            {
+                request.ReleaseYearFrom = 2070;
+            }
+
+
+            var query = _context.Movies
+                .Include(m => m.Episodes)
+                .Include(m => m.Comments)
+                .Include(m => m.Ratings)
+                .Include(m => m.Favorites)
+                .AsQueryable();
+
+            // 🔍 Lọc theo tên phim
+            if (!string.IsNullOrWhiteSpace(request.MovieName))
+            {
+                query = query.Where(m => m.Title.Contains(request.MovieName));
+            }
+
+            // 🎭 Lọc theo thể loại (Type)
+            if (request.Genres != null && request.Genres.Any())
+            {
+                query = query.Where(m => request.Genres.Contains(m.Type));
+            }
+
+            // ⭐ Lọc theo rating
+            if (!string.IsNullOrEmpty(request.Rating))
+            {
+                var parts = request.Rating.Split('-');
+                if (parts.Length == 2 &&
+                    double.TryParse(parts[0], out var minRating) &&
+                    double.TryParse(parts[1], out var maxRating))
+                {
+                    query = query.Where(m =>
+                        m.Ratings.Any() &&
+                        m.Ratings.Average(r => r.Score) >= minRating &&
+                        m.Ratings.Average(r => r.Score) <= maxRating
+                    );
+                }
+            }
+
+            // 📅 Lọc theo năm
+            if (request.ReleaseYearFrom.HasValue)
+                query = query.Where(m => m.ReleaseYear >= request.ReleaseYearFrom.Value);
+            if (request.ReleaseYearTo.HasValue)
+                query = query.Where(m => m.ReleaseYear <= request.ReleaseYearTo.Value);
+
+            // 🧮 Tổng số phim trước khi phân trang
+            var totalCount = await query.CountAsync();
+
+            // 📄 Áp dụng phân trang
+            var page = request.Page <= 0 ? 1 : request.Page;
+            var pageSize = request.PageSize <= 0 ? 10 : request.PageSize;
+
+            var skip = (page - 1) * pageSize;
+            var movies = await query
+     .OrderByDescending(m => m.CreatedAt)
+     .Skip(skip)
+     .Take(pageSize) // ✅ dùng biến pageSize an toàn
+     .Select(m => new
+     {
+         m.Id,
+         m.Title,
+         m.Description,
+         m.PosterUrl,
+         m.PosterPublicId,
+         m.TrailerUrl,
+         m.TrailerPublicId,
+         m.ReleaseYear,
+         m.Country,
+         m.Director,
+         m.Duration,
+         m.Type,
+         m.CreatedAt,
+         m.UpdatedAt,
+         AverageRating = m.Ratings.Any() ? m.Ratings.Average(r => r.Score) : 0,
+         Episodes = m.Episodes.Select(e => new
+         {
+             e.Id,
+             e.MovieId,
+             e.Title,
+             e.EpisodeNumber,
+             e.VideoUrl,
+             e.VideoPublicId,
+             e.Duration,
+             e.CreatedAt,
+             e.UpdatedAt
+         }),
+         Comments = m.Comments.Select(c => new
+         {
+             c.Id,
+             c.MovieId,
+             c.UserId,
+             c.Content,
+             c.CreatedAt
+         }),
+         Ratings = m.Ratings.Select(r => new
+         {
+             r.Id,
+             r.MovieId,
+             r.UserId,
+             r.Score
+         }),
+         Favorites = m.Favorites.Select(f => new
+         {
+             f.Id,
+             f.MovieId,
+             f.UserId
+         })
+     })
+     .ToListAsync();
+
+
+            // ✅ Trả về đúng format client yêu cầu
+            var response = new
+            {
+                total = totalCount,
+                page = request.Page,
+                pageSize = request.PageSize,
+                data = movies
+            };
+
+            return Ok(response);
         }
     }
 }

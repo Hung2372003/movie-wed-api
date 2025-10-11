@@ -19,4 +19,17 @@
     public class MovieUpdateDto : MovieCreateDto {
     
     }
+    public class MovieSearchRequest
+    {
+        public string? MovieName { get; set; }
+        public List<string>? Genres { get; set; }   // tương ứng Type
+        public string? Rating { get; set; }         // "0-3"
+        public int? ReleaseYearFrom { get; set; }
+        public int? ReleaseYearTo { get; set; }
+
+        // 🧭 Phân trang
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
 }
